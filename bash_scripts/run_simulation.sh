@@ -52,9 +52,9 @@ fi
 # Source code available in: ramses-sefa-SAS/managed-system/rest-client/
 echo; PrintWarn "Choose a simulation scenario to run:"; echo
 PrintWarn "1: addInstance     - Injects failures to trigger instance scaling (5min trial)"
-PrintWarn "2: changeImplementation - Changes service implementation via RAMSES"
-PrintWarn "3: changeLBWeights - Modifies load balancer weights via configuration"
-PrintWarn "4: shutdownInstance - Shuts down instances to test failure recovery"
+PrintWarn "2: changeImplementation - Updates response time thresholds (5min trial, changes at ~10s)"
+PrintWarn "3: changeLBWeights - Performance degradation scenario (10min trial, slowdown at 1.5min & 3min)"
+PrintWarn "4: shutdownInstance - Performance degradation scenario (10min trial, slowdown at 1.5min & 3min)"
 echo
 PrintWarn "5: List running simulations"
 PrintWarn "6: Stop all simulations"

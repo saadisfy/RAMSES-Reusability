@@ -123,9 +123,9 @@ cd bash_scripts
 
 The simulation script offers the following scenarios:
 - **Scenario 1 - addInstance**: Runs rest-client with failure injection enabled (5min trial, injects failure at 3min mark targeting restaurant-service)
-- **Scenario 2 - changeImplementation**: Runs rest-client with benchmark changing enabled to trigger RAMSES implementation adaptations
-- **Scenario 3 - changeLBWeights**: Runs rest-client configured to modify load balancer weights through RAMSES configuration changes
-- **Scenario 4 - shutdownInstance**: Runs rest-client with instance shutdown scenarios to test RAMSES failure recovery
+- **Scenario 2 - changeImplementation**: Runs rest-client with threshold updating enabled (5min trial, updates DELIVERY-PROXY-SERVICE response time threshold to 150ms at ~10s)
+- **Scenario 3 - changeLBWeights**: Runs rest-client with performance degradation enabled (10min trial, 1000ms delay at 1.5min, 600ms delay at 3min - both for 60s duration) - **IDENTICAL to Scenario 4**
+- **Scenario 4 - shutdownInstance**: Runs rest-client with performance degradation enabled (10min trial, 1000ms delay at 1.5min, 600ms delay at 3min - both for 60s duration) - **IDENTICAL to Scenario 3**
 
 The script also provides management options:
 - **Option 5**: List currently running simulation containers

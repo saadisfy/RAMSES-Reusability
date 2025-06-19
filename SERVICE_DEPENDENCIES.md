@@ -178,7 +178,9 @@ Through log analysis of `simulation-scenario-1`, we discovered that the simulati
 | **FailureInjectionService** | Injects service failures at specific times | `injectFailure`, timing, target instances |
 | **AdaptationController** | Controls RAMSES monitor/adaptation state | Calls RAMSES APIs directly |
 
-### **Scenario 1 Behavior (from actual logs):**
+### **Scenario Behaviors (from actual logs):**
+
+**Scenario 1 - Failure Injection:**
 ```
 Trial duration: 5 minutes
 Adapt? true
@@ -188,7 +190,64 @@ Target: restaurant-service@sefa-restaurant-service:58085
 Action: Calls stopInstance API to remove instance
 ```
 
-**Key Insight:** These Docker containers are the same rest-client codebase packaged with different environment variables to trigger different RAMSES adaptation scenarios. The source code is available in the ramses-sefa-SAS directory, making it possible to create custom scenarios by modifying the configurations.
+**Scenario 2 - Threshold/Benchmark Changes:**
+```
+Trial duration: 5 minutes
+Adapt? true
+injectFailure? NO
+fakeSlowOrdering? NO
+changeBenchmarkStart: 9 (9 seconds)
+Action: Updates max response time threshold for DELIVERY-PROXY-SERVICE to 150.0ms
+Purpose: Tests threshold-based adaptation triggers
+```
+
+**Scenario 3 - Performance Degradation (IDENTICAL to Scenario 4):**
+```
+Trial duration: 10 minutes
+Adapt? true
+fakeSlowOrdering? YES
+fakeSlowOrdering1Sleep: 1000.0ms, Start: 90s (1.5min), Duration: 60s
+fakeSlowOrdering2Sleep: 600.0ms, Start: 180s (3min), Duration: 60s
+injectFailure? NO
+Target: ordering-service@sefa-ordering-service:58086
+```
+
+**Scenario 4 - Performance Degradation:**
+```
+Trial duration: 10 minutes
+Adapt? true
+fakeSlowOrdering? YES
+fakeSlowOrdering1Sleep: 1000.0ms, Start: 90s (1.5min), Duration: 60s
+fakeSlowOrdering2Sleep: 600.0ms, Start: 180s (3min), Duration: 60s
+injectFailure? NO
+Issue: Failed to connect to ramses-plan:58003 (Connection refused)
+```
+
+### **Key Insights from Scenario Analysis:**
+
+1. **Different Scenarios = Different Configurations**: Each scenario is the same rest-client with different environment variable settings:
+   - **Scenario 1**: Focus on failure injection (removes instances)
+   - **Scenario 2**: Focus on threshold changes (updates response time thresholds)
+   - **Scenario 3**: Focus on performance degradation (identical to Scenario 4)
+   - **Scenario 4**: Focus on performance degradation (identical to Scenario 3)
+
+⚠️ **Important Discovery**: Scenarios 3 and 4 are **completely identical** in their configuration and behavior. Both implement the same performance degradation pattern targeting the ordering service. This suggests either:
+- A configuration error in the scenario setup
+- Intentional duplication for testing consistency
+- The original "changeLBWeights" functionality was replaced with performance degradation testing
+
+2. **Scenario Configuration Patterns**:
+   - **Trial Duration**: Varies by scenario (5min vs 10min)
+   - **Service Components**: Different combinations enabled/disabled
+   - **Timing Parameters**: Different start times and durations for events
+   - **Effective Scenarios**: Only 3 distinct behaviors (Scenarios 3&4 are duplicates)
+
+3. **Dependency Issues**: Scenario 4 failed due to `ramses-plan:58003` connection refused, indicating:
+   - Simulation scenarios expect ALL RAMSES services to be running
+   - They attempt to control RAMSES adaptation state via REST APIs
+   - Proper startup order is critical for simulations to work
+
+4. **Custom Scenario Creation**: The source code is available in ramses-sefa-SAS directory, making it possible to create custom scenarios by modifying the environment variable configurations in the rest-client application.
 
 ---
 *Last updated: Based on REAL FAILURE LOG ANALYSIS and SIMULATION DISCOVERY from 2025-06-19* 
