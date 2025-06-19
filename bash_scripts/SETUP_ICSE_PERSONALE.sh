@@ -9,7 +9,7 @@ if [[("${GITHUB_OAUTH}" = "") || ("${GITHUB_REPOSITORY_URL}" = "")]]; then
 fi
 
 PrintWarn "Desired architecture not specified or unknown. Supported values are 'arm64' and 'amd64'. Using 'arm64' as default option"
-ARCH="arm64"
+ARCH="amd64"
 PrintWarn "Running script with selceted architecture: ${ARCH}"
 sleep 3
 
@@ -32,14 +32,14 @@ sleep 2
 echo; PrintSuccess "Setting up the Managed System, SEFA!"; echo
 
 PrintSuccess "Setting up Netflix Eureka Server"
-docker pull giamburrasca/sefa-eureka:$ARCH
-docker run -P --name sefa-eureka -d --network ramses-sas-net giamburrasca/sefa-eureka:$ARCH
+docker pull giamburrasca/sefa-eureka:arm64
+docker run -P --name sefa-eureka -d --network ramses-sas-net giamburrasca/sefa-eureka:arm64
 echo
 sleep 2
 
 PrintSuccess "Setting up Spring Config Server"
-docker pull giamburrasca/sefa-configserver:$ARCH
-docker run -P --name sefa-configserver -e GITHUB_REPOSITORY_URL=$GITHUB_REPOSITORY_URL -d --network ramses-sas-net giamburrasca/sefa-configserver:$ARCH
+docker pull giamburrasca/sefa-configserver:arm64
+docker run -P --name sefa-configserver -e GITHUB_REPOSITORY_URL=$GITHUB_REPOSITORY_URL -d --network ramses-sas-net giamburrasca/sefa-configserver:arm64
 echo
 sleep 8
 
@@ -98,7 +98,7 @@ docker pull giamburrasca/ramses-knowledge:$ARCH
 docker run -P --name ramses-knowledge -d --network ramses-sas-net giamburrasca/ramses-knowledge:$ARCH
 sleep 10
 
-declare -a ramsesarr=("ramses-analyse" "ramses-plan" "ramses-execute" "ramses-monitor" "ramses-dashboard")
+declare -a ramsesarr=("ramses-analyse" "ramses-execute" "ramses-monitor" "ramses-dashboard")
 for i in "${ramsesarr[@]}"
 do
    PrintSuccess "Pulling $i"
@@ -106,6 +106,16 @@ do
    docker run -P --name $i -d --network ramses-sas-net giamburrasca/$i:$ARCH
    echo
    sleep 2
+done
+
+declare -a ramsesarr=("ramses-plan")
+for i in "${ramsesarr[@]}"
+do
+   PrintSuccess "Pulling $i"
+   docker pull giamburrasca/$i:arm64 #NOTE: the microservice uses libraries based on arm64. Running with tag "amd64" doesn't work
+   docker run -P --name $i -d --network ramses-sas-net giamburrasca/$i:arm64
+   echo
+   sleep 1
 done
 
 
