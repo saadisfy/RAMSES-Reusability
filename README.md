@@ -45,6 +45,20 @@ To begin with, install [Docker](https://www.docker.com/) on your machine and run
 - **Memory**: 8GB
 - **Swap**: 1GB
 
+### 🔧 Windows Docker Desktop Configuration (REQUIRED)
+
+**CRITICAL for Windows users**: Before running RAMSES-SEFA, Docker Desktop must be configured to expose the Docker API:
+
+1. **Open Docker Desktop Settings**
+2. Go to **"General"** or **"Advanced"** tab (version dependent)
+3. **Enable**: `"Expose daemon on tcp://localhost:2375 without TLS"`
+4. **Apply & Restart** Docker Desktop
+5. **Verify**: Run `curl http://localhost:2375/version` (should return Docker version info)
+
+**Why this is needed:** The `sefa-instances-manager` component requires direct access to the Docker API to manage container instances during adaptations. On Windows Docker Desktop, this TCP API access must be explicitly enabled.
+
+⚠️ **Security Note**: This exposes Docker daemon on localhost:2375 without authentication. Only use in development environments.
+
 The whole Self-Adaptive System was developed, run and tested on a 2020 Apple MacBook Air with the following specifications:
 - **SoC**: Apple M1 (8-core CPU, 7-core GPU)
 - **RAM**: 16GB LPDDR4
@@ -88,11 +102,65 @@ To interact with the _RAMSES_ dashboard, open your browser and go to the URL exp
 
 From the _Home_ page you can track the availability and the average response time of each service and of their instances. Notice that these values are available only if new requests are made to the services. To generate artificial requests to _SEFA_, you can use our automatic load generator. If you did not launch it when asked by the setup script, you can instanciate it by running again the same script with the `-l` option.
 
+## Running Simulation Scenarios
+
+After the RAMSES-SEFA system is up and running, you can trigger various adaptation scenarios using the dedicated simulation script:
+
+```bash
+cd bash_scripts
+./run_simulation.sh
+```
+
+### Understanding the Simulation Scenarios
+
+**Important Discovery**: The simulation scenarios (scenario1-4) are actually the **rest-client application** from `ramses-sefa-SAS/managed-system/rest-client/` configured with different environment variables. They are NOT separate applications, but the same codebase with different behaviors enabled.
+
+**Key Components in rest-client:**
+- **PerformanceFakerService**: Controls artificial performance degradation
+- **BenchmarksChangerService**: Triggers implementation changes via RAMSES APIs  
+- **FailureInjectionService**: Injects service failures at specific times
+- **AdaptationController**: Enables/disables RAMSES adaptation and monitoring
+
+The simulation script offers the following scenarios:
+- **Scenario 1 - addInstance**: Runs rest-client with failure injection enabled (5min trial, injects failure at 3min mark targeting restaurant-service)
+- **Scenario 2 - changeImplementation**: Runs rest-client with benchmark changing enabled to trigger RAMSES implementation adaptations
+- **Scenario 3 - changeLBWeights**: Runs rest-client configured to modify load balancer weights through RAMSES configuration changes
+- **Scenario 4 - shutdownInstance**: Runs rest-client with instance shutdown scenarios to test RAMSES failure recovery
+
+The script also provides management options:
+- **Option 5**: List currently running simulation containers
+- **Option 6**: Stop all running simulations
+
+You can run multiple simulations concurrently and monitor their effects through the RAMSES Dashboard. The simulation script can be executed multiple times without restarting the entire RAMSES-SEFA system.
+
 ## Troubleshooting and known issues
-A known issue on macOS involves the Actuator component, that sometimes cannot directly contact the Docker interface to run or stop containers. This results in the `Instances Manager` container to fail its booting process. To solve this issue, install `socat` using [this guide](https://stackoverflow.com/questions/16808543/install-socat-on-mac) and run the command 
+
+### Windows Docker Desktop Issues
+
+**Problem**: `sefa-instances-manager` fails with "Network is unreachable" or "failed to respond" errors to `host.docker.internal:2375`
+
+**Solution**: Enable Docker API exposure in Docker Desktop settings:
+1. Docker Desktop Settings → General/Advanced
+2. Enable "Expose daemon on tcp://localhost:2375 without TLS"
+3. Apply & Restart Docker Desktop
+4. Verify with: `curl http://localhost:2375/version`
+
+### macOS Docker Issues
+
+**Problem**: The Actuator component cannot directly contact the Docker interface to run or stop containers, causing `Instances Manager` container to fail.
+
+**Solution**: Install `socat` using [this guide](https://stackoverflow.com/questions/16808543/install-socat-on-mac) and run:
 ```
 $ socat -d TCP-LISTEN:2375,range=0.0.0.0/0,reuseaddr,fork UNIX:/var/run/docker.sock
 ```
+
+### General Docker Connection Issues
+
+If you encounter Docker API connection errors:
+1. Verify Docker is running: `docker ps`
+2. Check if Docker API is accessible: `curl http://localhost:2375/version`
+3. Ensure proper network configuration for your OS
+4. For detailed dependency information, see [SERVICE_DEPENDENCIES.md](./SERVICE_DEPENDENCIES.md)
 
 
 
