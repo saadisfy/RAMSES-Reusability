@@ -1,0 +1,395 @@
+# Add this variable at the top for easy registry switching
+x-image-registry: &image-registry ${IMAGE_REGISTRY:-giamburrasca}
+
+# The services are organized with proper dependencies:
+# - MySQL is started first
+# - Eureka server depends on MySQL
+# - Config server depends on Eureka
+# - All other services depend on both Config server and Eureka
+
+services:
+  # MySQL Service
+  mysql:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/mysql:${ARCH:-amd64}
+    networks:
+      ramses-sas-net:
+        aliases:
+          - mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # SEFA Services
+  #NOTE: there is no amd64 version of the eureka image, so we need to use the arm64 version
+  #TODO: Create image for amd64 if neceessary
+  sefa-eureka:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-eureka:arm64
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-eureka
+    ports:
+      - "58082:58082"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:58082/"]
+      interval: 10s 
+      timeout: 10s
+      retries: 10
+      start_period: 200s
+
+  #NOTE: there is no amd64 version of the configserver image, so we need to use the arm64 version
+  #TODO: Create image for amd64 if neceessary
+  sefa-configserver:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-configserver:arm64
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-configserver
+    environment:
+      - GITHUB_REPOSITORY_URL=${GITHUB_REPOSITORY_URL}
+    ports:
+      - "58888:58888"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:58888/actuator/health"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 100s
+
+  sefa-restaurant-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-restaurant-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-restaurant-service
+          - RESTAURANT-SERVICE
+    ports:
+      - "58085:58085"
+
+  sefa-ordering-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-ordering-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-ordering-service
+          - ORDERING-SERVICE
+    ports:
+      - "58086:58086"
+
+  sefa-payment-proxy-1-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-1-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-payment-proxy-1-service
+          - PAYMENT-PROXY-1-SERVICE
+    ports:
+      - "58090:58090"
+
+  sefa-delivery-proxy-1-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-1-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-delivery-proxy-1-service
+          - DELIVERY-PROXY-1-SERVICE
+    ports:
+      - "58095:58095"
+
+  sefa-web-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-web-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-web-service
+          - WEB-SERVICE
+    ports:
+      - "58080:58080"
+
+  sefa-api-gateway:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-api-gateway:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-api-gateway
+          - API-GATEWAY-SERVICE
+    ports:
+      - "58081:58081"
+
+  # Additional proxy services
+  sefa-payment-proxy-2-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-2-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-payment-proxy-2-service
+          - PAYMENT-PROXY-2-SERVICE
+    ports:
+      - "58091:58091"
+
+  sefa-delivery-proxy-2-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-2-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-delivery-proxy-2-service
+          - DELIVERY-PROXY-2-SERVICE
+    ports:
+      - "58096:58096"
+
+  sefa-payment-proxy-3-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-3-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-payment-proxy-3-service
+          - PAYMENT-PROXY-3-SERVICE
+    ports:
+      - "58092:58092"
+
+  sefa-delivery-proxy-3-service:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-3-service:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-delivery-proxy-3-service
+          - DELIVERY-PROXY-3-SERVICE
+    ports:
+      - "58097:58097"
+
+  # Probe and Actuators
+  sefa-probe:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-probe:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-probe
+
+  sefa-instances-manager:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-instances-manager:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-instances-manager
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Required for Docker socket exposure
+    # NOTE: You must expose Docker daemon on tcp://localhost:2375 for this service to work (see SETUP_ICSE_PERSONALE.sh)
+
+  sefa-config-manager:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-config-manager:${ARCH:-amd64}
+    depends_on:
+      sefa-eureka:
+        condition: service_healthy
+      sefa-configserver:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-config-manager
+    environment:
+      - GITHUB_OAUTH=${GITHUB_OAUTH}
+      - GITHUB_REPOSITORY_URL=${GITHUB_REPOSITORY_URL}
+
+  # RAMSES Services
+  ramses-knowledge:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/ramses-knowledge:${ARCH:-amd64}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      sefa-probe:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:58005/"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 200s
+    networks:
+      ramses-sas-net:
+        aliases:
+          - ramses-knowledge
+    ports:
+      - "58005:58005"
+    environment:
+      - EUREKA_IP_PORT=sefa-eureka:58082
+      - CONFIG_SERVER_IP_PORT=sefa-configserver:8888
+
+  ramses-monitor:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/ramses-monitor:${ARCH:-amd64}
+    container_name: ramses-monitor
+    hostname: ramses-monitor
+    networks:
+      ramses-sas-net:
+        aliases:
+          - ramses-monitor
+    ports:
+      - "58001:58001"
+    depends_on:
+      ramses-knowledge:
+        condition: service_healthy
+    environment:
+      - KNOWLEDGE_URL=http://ramses-knowledge:58005
+      - EUREKA_IP_PORT=sefa-eureka:58082
+      - CONFIG_SERVER_IP_PORT=sefa-configserver:8888
+
+  ramses-analyse:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/ramses-analyse:${ARCH:-amd64}
+    container_name: ramses-analyse
+    hostname: ramses-analyse
+    networks:
+      ramses-sas-net:
+        aliases:
+          - ramses-analyse
+    ports:
+      - "58002:58002"
+    depends_on:
+      ramses-knowledge:
+        condition: service_healthy
+    environment:
+      - KNOWLEDGE_URL=http://ramses-knowledge:58005
+      - EUREKA_IP_PORT=sefa-eureka:58082
+      - CONFIG_SERVER_IP_PORT=sefa-configserver:8888
+
+  ramses-execute:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/ramses-execute:${ARCH:-amd64}
+    container_name: ramses-execute
+    hostname: ramses-execute
+    networks:
+      ramses-sas-net:
+        aliases:
+          - ramses-execute
+    ports:
+      - "58004:58004"
+    depends_on:
+      ramses-knowledge:
+        condition: service_healthy
+    environment:
+      - KNOWLEDGE_URL=http://ramses-knowledge:58005
+      - MONITOR_URL=http://ramses-monitor:58001
+      - INSTANCES_MANAGER_ACTUATOR_URL=http://sefa-instances-manager:58015
+      - CONFIG_MANAGER_ACTUATOR_URL=http://sefa-config-manager:58016
+      - EUREKA_IP_PORT=sefa-eureka:58082
+      - CONFIG_SERVER_IP_PORT=sefa-configserver:8888
+
+  ramses-dashboard:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/ramses-dashboard:${ARCH:-amd64}
+    container_name: ramses-dashboard
+    hostname: ramses-dashboard
+    networks:
+      ramses-sas-net:
+        aliases:
+          - ramses-dashboard
+    ports:
+      - "58000:58000"
+    depends_on:
+      ramses-knowledge:
+        condition: service_healthy
+    environment:
+      - KNOWLEDGE_URL=http://ramses-knowledge:58005
+      - EUREKA_IP_PORT=sefa-eureka:58082
+      - CONFIG_SERVER_IP_PORT=sefa-configserver:8888
+
+  ramses-plan:
+    image: ${IMAGE_REGISTRY:-giamburrasca}/ramses-plan:arm64
+    container_name: ramses-plan
+    hostname: ramses-plan
+    networks:
+      ramses-sas-net:
+        aliases:
+          - ramses-plan
+    ports:
+      - "58003:58003"
+    depends_on:
+      ramses-knowledge:
+        condition: service_healthy
+    environment:
+      - KNOWLEDGE_URL=http://ramses-knowledge:58005
+      - EXECUTE_URL=http://ramses-execute:58004
+      - EUREKA_IP_PORT=sefa-eureka:58082
+      - CONFIG_SERVER_IP_PORT=sefa-configserver:8888
+
+  # # Load Generator (optional)
+  # sefa-load-generator:
+  #   image: sbi98/sefa-load-generator:${ARCH:-arm64}
+  #   container_name: sefa-load-generator
+  #   hostname: sefa-load-generator
+  #   networks:
+  #     ramses-sas-net:
+  #       aliases:
+  #         - sefa-load-generator
+  #   profiles:
+  #     - load-generator
+
+networks:
+  ramses-sas-net:
+    driver: bridge 
