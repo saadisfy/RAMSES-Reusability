@@ -229,6 +229,14 @@ services:
       ramses-sas-net:
         aliases:
           - sefa-probe
+    ports:
+      - "58020:58020"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:58020/actuator/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   sefa-instances-manager:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-instances-manager:${ARCH:-amd64}
