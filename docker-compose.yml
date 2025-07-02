@@ -80,6 +80,13 @@ services:
           - RESTAURANT-SERVICE
     ports:
       - "58085:58085"
+    # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/RESTAURANT-SERVICE | grep '<application>'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   sefa-ordering-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-ordering-service:${ARCH:-amd64}
@@ -95,6 +102,13 @@ services:
           - ORDERING-SERVICE
     ports:
       - "58086:58086"
+    # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/ORDERING-SERVICE | grep '<application>'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # Only one payment and delivery proxy can be active for RAMSES knowledge initialization
   sefa-payment-proxy-1-service:
@@ -111,6 +125,13 @@ services:
           - PAYMENT-PROXY-1-SERVICE
     ports:
       - "58090:58090"
+    # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/PAYMENT-PROXY-1-SERVICE | grep '<application>'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   sefa-delivery-proxy-1-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-1-service:${ARCH:-amd64}
@@ -126,6 +147,13 @@ services:
           - DELIVERY-PROXY-1-SERVICE
     ports:
       - "58095:58095"
+    # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/DELIVERY-PROXY-1-SERVICE | grep '<application>'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   sefa-web-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-web-service:${ARCH:-amd64}
@@ -141,6 +169,13 @@ services:
           - WEB-SERVICE
     ports:
       - "58080:58080"
+    # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/WEB-SERVICE | grep '<application>'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   sefa-api-gateway:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-api-gateway:${ARCH:-amd64}
@@ -156,6 +191,13 @@ services:
           - API-GATEWAY-SERVICE
     ports:
       - "58081:58081"
+    # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/API-GATEWAY-SERVICE | grep '<application>'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # Additional proxy services
   # sefa-payment-proxy-2-service:
@@ -253,6 +295,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"  # Required for Docker socket exposure
     # NOTE: You must expose Docker daemon on tcp://localhost:2375 for this service to work (see SETUP_ICSE_PERSONALE.sh)
+    ports:
+      - "58015:58015"
 
   sefa-config-manager:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-config-manager:${ARCH:-amd64}
@@ -268,6 +312,8 @@ services:
     environment:
       - GITHUB_OAUTH=${GITHUB_OAUTH}
       - GITHUB_REPOSITORY_URL=${GITHUB_REPOSITORY_URL}
+    ports:
+      - "58016:58016"
 
   # RAMSES Services
   ramses-knowledge:
@@ -277,8 +323,10 @@ services:
         condition: service_healthy
       sefa-probe:
         condition: service_healthy
+      sefa-restaurant-service:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:58005/"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:58005/rest/activeModule"]
       interval: 10s
       timeout: 10s
       retries: 10
