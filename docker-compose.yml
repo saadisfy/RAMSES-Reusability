@@ -96,6 +96,7 @@ services:
     ports:
       - "58086:58086"
 
+  # Only one payment and delivery proxy can be active for RAMSES knowledge initialization
   sefa-payment-proxy-1-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-1-service:${ARCH:-amd64}
     depends_on:
@@ -157,65 +158,65 @@ services:
       - "58081:58081"
 
   # Additional proxy services
-  sefa-payment-proxy-2-service:
-    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-2-service:${ARCH:-amd64}
-    depends_on:
-      sefa-eureka:
-        condition: service_healthy
-      sefa-configserver:
-        condition: service_healthy
-    networks:
-      ramses-sas-net:
-        aliases:
-          - sefa-payment-proxy-2-service
-          - PAYMENT-PROXY-2-SERVICE
-    ports:
-      - "58091:58091"
+  # sefa-payment-proxy-2-service:
+  #   image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-2-service:${ARCH:-amd64}
+  #   depends_on:
+  #     sefa-eureka:
+  #       condition: service_healthy
+  #     sefa-configserver:
+  #       condition: service_healthy
+  #   networks:
+  #     ramses-sas-net:
+  #       aliases:
+  #         - sefa-payment-proxy-2-service
+  #         - PAYMENT-PROXY-2-SERVICE
+  #   ports:
+  #     - "58091:58091"
 
-  sefa-delivery-proxy-2-service:
-    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-2-service:${ARCH:-amd64}
-    depends_on:
-      sefa-eureka:
-        condition: service_healthy
-      sefa-configserver:
-        condition: service_healthy
-    networks:
-      ramses-sas-net:
-        aliases:
-          - sefa-delivery-proxy-2-service
-          - DELIVERY-PROXY-2-SERVICE
-    ports:
-      - "58096:58096"
+  # sefa-delivery-proxy-2-service:
+  #   image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-2-service:${ARCH:-amd64}
+  #   depends_on:
+  #     sefa-eureka:
+  #       condition: service_healthy
+  #     sefa-configserver:
+  #       condition: service_healthy
+  #   networks:
+  #     ramses-sas-net:
+  #       aliases:
+  #         - sefa-delivery-proxy-2-service
+  #         - DELIVERY-PROXY-2-SERVICE
+  #   ports:
+  #     - "58096:58096"
 
-  sefa-payment-proxy-3-service:
-    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-3-service:${ARCH:-amd64}
-    depends_on:
-      sefa-eureka:
-        condition: service_healthy
-      sefa-configserver:
-        condition: service_healthy
-    networks:
-      ramses-sas-net:
-        aliases:
-          - sefa-payment-proxy-3-service
-          - PAYMENT-PROXY-3-SERVICE
-    ports:
-      - "58092:58092"
+  # sefa-payment-proxy-3-service:
+  #   image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-3-service:${ARCH:-amd64}
+  #   depends_on:
+  #     sefa-eureka:
+  #       condition: service_healthy
+  #     sefa-configserver:
+  #       condition: service_healthy
+  #   networks:
+  #     ramses-sas-net:
+  #       aliases:
+  #         - sefa-payment-proxy-3-service
+  #         - PAYMENT-PROXY-3-SERVICE
+  #   ports:
+  #     - "58092:58092"
 
-  sefa-delivery-proxy-3-service:
-    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-3-service:${ARCH:-amd64}
-    depends_on:
-      sefa-eureka:
-        condition: service_healthy
-      sefa-configserver:
-        condition: service_healthy
-    networks:
-      ramses-sas-net:
-        aliases:
-          - sefa-delivery-proxy-3-service
-          - DELIVERY-PROXY-3-SERVICE
-    ports:
-      - "58097:58097"
+  # sefa-delivery-proxy-3-service:
+  #   image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-3-service:${ARCH:-amd64}
+  #   depends_on:
+  #     sefa-eureka:
+  #       condition: service_healthy
+  #     sefa-configserver:
+  #       condition: service_healthy
+  #   networks:
+  #     ramses-sas-net:
+  #       aliases:
+  #         - sefa-delivery-proxy-3-service
+  #         - DELIVERY-PROXY-3-SERVICE
+  #   ports:
+  #     - "58097:58097"
 
   # Probe and Actuators
   sefa-probe:
