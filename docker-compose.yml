@@ -127,7 +127,7 @@ services:
       - "58090:58090"
     # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
     healthcheck:
-      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/PAYMENT-PROXY-1-SERVICE | grep '<application>'"]
+      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/PAYMENT-PROXY-SERVICE | grep '<application>'"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -149,7 +149,7 @@ services:
       - "58095:58095"
     # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
     healthcheck:
-      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/DELIVERY-PROXY-1-SERVICE | grep '<application>'"]
+      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/DELIVERY-PROXY-SERVICE | grep '<application>'"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -214,6 +214,13 @@ services:
   #         - PAYMENT-PROXY-2-SERVICE
   #   ports:
   #     - "58091:58091"
+  #   # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+  #   healthcheck:
+  #     test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/PAYMENT-PROXY-SERVICE | grep '<application>'"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+  #     start_period: 30s
 
   # sefa-delivery-proxy-2-service:
   #   image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-2-service:${ARCH:-amd64}
@@ -229,6 +236,13 @@ services:
   #         - DELIVERY-PROXY-2-SERVICE
   #   ports:
   #     - "58096:58096"
+  #   # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+  #   healthcheck:
+  #     test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/DELIVERY-PROXY-SERVICE | grep '<application>'"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+  #     start_period: 30s
 
   # sefa-payment-proxy-3-service:
   #   image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-3-service:${ARCH:-amd64}
@@ -244,6 +258,13 @@ services:
   #         - PAYMENT-PROXY-3-SERVICE
   #   ports:
   #     - "58092:58092"
+  #   # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+  #   healthcheck:
+  #     test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/PAYMENT-PROXY-SERVICE | grep '<application>'"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+  #     start_period: 30s
 
   # sefa-delivery-proxy-3-service:
   #   image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-3-service:${ARCH:-amd64}
@@ -259,6 +280,13 @@ services:
   #         - DELIVERY-PROXY-3-SERVICE
   #   ports:
   #     - "58097:58097"
+  #   # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+  #   healthcheck:
+  #     test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/DELIVERY-PROXY-SERVICE | grep '<application>'"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+  #     start_period: 30s
 
   # Probe and Actuators
   sefa-probe:
@@ -318,12 +346,18 @@ services:
   # RAMSES Services
   ramses-knowledge:
     image: ${IMAGE_REGISTRY:-giamburrasca}/ramses-knowledge:${ARCH:-amd64}
-    depends_on:
+    depends_on: # all sefa services defined in system architecture of knowledge needs to be registered to eureka before knowledge is started
       mysql:
         condition: service_healthy
       sefa-probe:
         condition: service_healthy
       sefa-restaurant-service:
+        condition: service_healthy
+      sefa-ordering-service:
+        condition: service_healthy
+      sefa-payment-proxy-1-service:
+        condition: service_healthy
+      sefa-delivery-proxy-1-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:58005/rest/activeModule"]
