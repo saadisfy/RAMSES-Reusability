@@ -1,3 +1,5 @@
+name: ramses
+
 # Add this variable at the top for easy registry switching
 x-image-registry: &image-registry ${IMAGE_REGISTRY:-giamburrasca}
 
@@ -11,6 +13,8 @@ services:
   # MySQL Service
   mysql:
     image: ${IMAGE_REGISTRY:-giamburrasca}/mysql:${ARCH:-amd64}
+    container_name: mysql
+    hostname: mysql
     networks:
       ramses-sas-net:
         aliases:
@@ -28,6 +32,8 @@ services:
   #TODO: Create image for amd64 if neceessary
   sefa-eureka:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-eureka:arm64
+    container_name: sefa-eureka
+    hostname: sefa-eureka
     depends_on:
       mysql:
         condition: service_healthy
@@ -48,6 +54,8 @@ services:
   #TODO: Create image for amd64 if neceessary
   sefa-configserver:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-configserver:arm64
+    container_name: sefa-configserver
+    hostname: sefa-configserver
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -68,6 +76,8 @@ services:
 
   sefa-restaurant-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-restaurant-service:${ARCH:-amd64}
+    container_name: sefa-restaurant-service
+    hostname: sefa-restaurant-service
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -90,6 +100,8 @@ services:
 
   sefa-ordering-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-ordering-service:${ARCH:-amd64}
+    container_name: sefa-ordering-service
+    hostname: sefa-ordering-service
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -113,6 +125,8 @@ services:
   # Only one payment and delivery proxy can be active for RAMSES knowledge initialization
   sefa-payment-proxy-1-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-payment-proxy-1-service:${ARCH:-amd64}
+    container_name: sefa-payment-proxy-1-service
+    hostname: sefa-payment-proxy-1-service
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -135,6 +149,8 @@ services:
 
   sefa-delivery-proxy-1-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-delivery-proxy-1-service:${ARCH:-amd64}
+    container_name: sefa-delivery-proxy-1-service
+    hostname: sefa-delivery-proxy-1-service
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -157,6 +173,8 @@ services:
 
   sefa-web-service:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-web-service:${ARCH:-amd64}
+    container_name: sefa-web-service
+    hostname: sefa-web-service
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -169,9 +187,9 @@ services:
           - WEB-SERVICE
     ports:
       - "58080:58080"
-    # Healthcheck: By curling Eureka, we ensure the service is not only healthy but also ready (registered in Eureka)
+    # Healthcheck: Web service doesn't register with Eureka, so check the service directly
     healthcheck:
-      test: ["CMD", "sh", "-c", "curl -sf http://sefa-eureka:58082/eureka/apps/WEB-SERVICE | grep '<application>'"]
+      test: ["CMD", "sh", "-c", "curl --fail --silent http://localhost:58080/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -179,6 +197,8 @@ services:
 
   sefa-api-gateway:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-api-gateway:${ARCH:-amd64}
+    container_name: sefa-api-gateway
+    hostname: sefa-api-gateway
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -291,6 +311,8 @@ services:
   # Probe and Actuators
   sefa-probe:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-probe:${ARCH:-amd64}
+    container_name: sefa-probe
+    hostname: sefa-probe
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -311,6 +333,8 @@ services:
 
   sefa-instances-manager:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-instances-manager:${ARCH:-amd64}
+    container_name: sefa-instances-manager
+    hostname: sefa-instances-manager
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -328,6 +352,8 @@ services:
 
   sefa-config-manager:
     image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-config-manager:${ARCH:-amd64}
+    container_name: sefa-config-manager
+    hostname: sefa-config-manager
     depends_on:
       sefa-eureka:
         condition: service_healthy
@@ -346,6 +372,8 @@ services:
   # RAMSES Services
   ramses-knowledge:
     image: ${IMAGE_REGISTRY:-giamburrasca}/ramses-knowledge:${ARCH:-amd64}
+    container_name: ramses-knowledge
+    hostname: ramses-knowledge
     depends_on: # all sefa services defined in system architecture of knowledge needs to be registered to eureka before knowledge is started
       mysql:
         condition: service_healthy
@@ -469,18 +497,20 @@ services:
       - EUREKA_IP_PORT=sefa-eureka:58082
       - CONFIG_SERVER_IP_PORT=sefa-configserver:8888
 
-  # # Load Generator (optional)
-  # sefa-load-generator:
-  #   image: sbi98/sefa-load-generator:${ARCH:-arm64}
-  #   container_name: sefa-load-generator
-  #   hostname: sefa-load-generator
-  #   networks:
-  #     ramses-sas-net:
-  #       aliases:
-  #         - sefa-load-generator
-  #   profiles:
-  #     - load-generator
+  # Load Generator (required for RAMSES availability metrics)
+  sefa-load-generator:
+    image: sbi98/sefa-load-generator:arm64 # there is no amd64 version of the load generator image
+    container_name: sefa-load-generator
+    hostname: sefa-load-generator
+    depends_on:
+      sefa-web-service:
+        condition: service_healthy
+    networks:
+      ramses-sas-net:
+        aliases:
+          - sefa-load-generator
 
 networks:
   ramses-sas-net:
-    driver: bridge 
+    name: ramses-sas-net #necessary, otherwise compose will create a new network with prefix "ramses-reusability", which will cause issues with the network name running the simulation
+    external: true 
