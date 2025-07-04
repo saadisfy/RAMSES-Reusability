@@ -351,7 +351,7 @@ services:
       - "58015:58015"
 
   sefa-config-manager:
-    image: ${IMAGE_REGISTRY:-giamburrasca}/sefa-config-manager:${ARCH:-amd64}
+    image: saadisfy/sefa-config-manager:${ARCH:-amd64} #todo: until a fixed registry is set for all images, this is temporary hardcoded
     container_name: sefa-config-manager
     hostname: sefa-config-manager
     depends_on:
@@ -513,4 +513,4 @@ services:
 networks:
   ramses-sas-net:
     name: ramses-sas-net #necessary, otherwise compose will create a new network with prefix "ramses-reusability", which will cause issues with the network name running the simulation
-    external: true 
+    driver: bridge 
