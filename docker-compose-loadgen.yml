@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  sefa-load-generator:
+    image: sbi98/sefa-load-generator:arm64
+    networks:
+      - ramses-sas-net
+    deploy:
+      replicas: ${LOAD_GENERATOR_COUNT:-1}
+    restart: unless-stopped
+    environment:
+      - LOAD_GENERATOR_ID=${LOAD_GENERATOR_ID:-default}
+
+networks:
+  ramses-sas-net:
+    external: true
